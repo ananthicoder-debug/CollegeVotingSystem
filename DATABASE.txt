@@ -1,0 +1,121 @@
+CREATE DATABASE IF NOT EXISTS college_voting_system;
+USE college_voting_system;
+
+----------------------------------------------------------
+-- 1. ADMINS TABLE
+----------------------------------------------------------
+CREATE TABLE admins (
+    admin_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+----------------------------------------------------------
+-- 2. AUDIT LOGS TABLE
+----------------------------------------------------------
+CREATE TABLE audit_logs (
+    log_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_type ENUM('ADMIN','VOTER') NOT NULL,
+    user_id VARCHAR(50) NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    details TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+----------------------------------------------------------
+-- 3. SYMBOLS TABLE
+----------------------------------------------------------
+CREATE TABLE symbols (
+    symbol_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL UNIQUE,
+    is_taken TINYINT(1) DEFAULT 0,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+----------------------------------------------------------
+-- 4. VOTERS TABLE
+----------------------------------------------------------
+CREATE TABLE voters (
+    voter_id VARCHAR(20) NOT NULL PRIMARY KEY,
+    roll_number VARCHAR(20) NOT NULL UNIQUE,
+    full_name VARCHAR(100) NOT NULL,
+    department VARCHAR(50) NOT NULL,
+    year_of_study INT NOT NULL,
+    email VARCHAR(100),
+    password VARCHAR(255) NOT NULL,
+    is_approved TINYINT(1) DEFAULT 0,
+    has_voted TINYINT(1) DEFAULT 0,
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+----------------------------------------------------------
+-- 5. ELECTIONS TABLE
+----------------------------------------------------------
+CREATE TABLE elections (
+    election_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    election_name VARCHAR(100) NOT NULL,
+    start_date DATETIME NOT NULL,
+    end_date DATETIME NOT NULL,
+    is_active TINYINT(1) DEFAULT 0,
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_elections_admin 
+        FOREIGN KEY (created_by) REFERENCES admins(admin_id)
+        ON DELETE SET NULL
+);
+
+----------------------------------------------------------
+-- 6. CANDIDATES TABLE
+----------------------------------------------------------
+CREATE TABLE candidates (
+    candidate_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rollno VARCHAR(20) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    dept VARCHAR(50) NOT NULL,
+    symbol_filename VARCHAR(255),
+    photo_path VARCHAR(255),
+    description_path VARCHAR(255),
+    is_approved TINYINT(1) DEFAULT 0,
+    vote_count INT DEFAULT 0,
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX (rollno),
+    INDEX (symbol_filename),
+
+    CONSTRAINT fk_candidate_roll 
+        FOREIGN KEY (rollno) REFERENCES voters(roll_number)
+        ON DELETE CASCADE,
+        
+    CONSTRAINT fk_candidate_symbol
+        FOREIGN KEY (symbol_filename) REFERENCES symbols(filename)
+        ON DELETE SET NULL
+);
+
+----------------------------------------------------------
+-- 7. VOTES TABLE
+
+CREATE TABLE votes (
+    vote_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    voter_id VARCHAR(20) NOT NULL,
+    candidate_id INT NOT NULL,
+    election_id INT NOT NULL,
+    voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_votes_voter
+        FOREIGN KEY (voter_id) REFERENCES voters(voter_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_votes_candidate
+        FOREIGN KEY (candidate_id) REFERENCES candidates(candidate_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_votes_election
+        FOREIGN KEY (election_id) REFERENCES elections(election_id)
+        ON DELETE CASCADE
+);
+
+
